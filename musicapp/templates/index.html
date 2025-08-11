@@ -1,0 +1,61 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en" class="bg-gray-900 text-white font-sans">
+ <head>
+  <meta charset="utf-8"/>
+  <title>Music Player</title>
+
+  <!-- Font Awesome -->
+  <link href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet"/>
+
+  <!-- MediaElement CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/mediaelement/4.2.7/mediaelementplayer.min.css" rel="stylesheet"/>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts Sofia -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Sofia">
+
+  <!-- Custom styles if needed, you can remove if unused -->
+  <!-- <link href="{% static 'style.css' %}" rel="stylesheet"/> -->
+
+ </head>
+ <body class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 p-4">
+
+  {% include 'main.html' %}
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mediaelement/4.2.7/mediaelement-and-player.min.js"></script>
+  <script src="{% static 'script.js' %}"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const audio = document.getElementById('fc-media');  // Your audio element ID
+      const lyricsContainer = document.getElementById('song-lyrics');
+      let currentLyricIndex = 0;
+
+      // Parse lyrics JSON from data attribute
+      const lyricsData = JSON.parse(lyricsContainer.getAttribute('data-lyrics'));
+
+      audio.addEventListener('timeupdate', function () {
+        const currentTime = audio.currentTime;
+
+        while (currentLyricIndex < lyricsData.length - 1 && currentTime >= timeToSeconds(lyricsData[currentLyricIndex + 1].time)) {
+          currentLyricIndex++;
+        }
+
+        // Update lyrics text with smooth transition
+        lyricsContainer.innerText = lyricsData[currentLyricIndex].lyrics;
+      });
+
+      function timeToSeconds(time) {
+        const [minutes, seconds] = time.split(':').map(parseFloat);
+        return minutes * 60 + seconds;
+      }
+    });
+  </script>
+
+ </body>
+</html>

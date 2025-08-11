@@ -1,0 +1,144 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en" class="bg-gray-900 text-white font-sans">
+
+<head>
+    <meta charset="utf-8" />
+    <title>music player</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome for icons -->
+    <link href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet" />
+</head>
+
+<body class="min-h-screen p-6 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
+
+    <div class="space-y-12 max-w-4xl mx-auto">
+
+        {% for item in page_obj %}
+        <div class="music-player flex flex-col md:flex-row items-center gap-6 bg-gray-800 p-6 rounded-lg shadow-lg">
+
+            <div class="cover w-40 h-40 overflow-hidden rounded-md flex-shrink-0">
+                <img alt="{{ item.title }}" src="{{ item.cover_image.url }}" class="object-cover w-full h-full" />
+            </div>
+
+            <div class="titre flex-grow text-center md:text-left">
+                <h3 class="text-indigo-400 text-lg font-semibold">{{ item.artist }}</h3>
+                <h1 class="text-white text-2xl font-bold">{{ item.title }}</h1>
+
+                <div class="lecteur mt-4">
+                    <audio id="fc-media-{{ forloop.counter }}" class="w-full rounded-md" controls preload="metadata">
+                        <source
+                            src="{% if item.audio_file %}{{ item.audio_file.url }}{% else %}{{ item.audio_link }}{% endif %}"
+                            type="audio/mp3" />
+                        Your browser does not support the audio element.
+                    </audio>
+
+                    <!-- Volume slider -->
+                    <input type="range" min="0" max="1" step="0.01" value="1"
+                        class="w-24 h-2 rounded-lg cursor-pointer accent-indigo-400"
+                        id="volume-slider-{{ forloop.counter }}" aria-label="Volume control" />
+                </div>
+            </div>
+
+        </div>
+
+        <div class="right-section max-w-4xl mx-auto mt-4 bg-gray-700 p-4 rounded-md">
+            <div class="lyrics-container">
+                <div class="lyrics text-indigo-300 font-medium text-center" id="lyrics-{{ forloop.counter }}">
+                    Loading lyrics...
+                </div>
+
+                <script type="application/json" id="lyrics-{{ forloop.counter }}-data">
+  {{ item.lyrics|safe }}
+                </script>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="text-center mt-10">
+            <a href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{% endif %}"
+                class="text-indigo-400 mr-6 hover:text-indigo-600 transition">
+                <i class="fa fa-step-backward fa-2x"></i>
+            </a>
+            <a href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{% endif %}"
+                class="text-indigo-400 hover:text-indigo-600 transition">
+                <i class="fa fa-step-forward fa-2x"></i>
+            </a>
+        </div>
+
+    </div>
+
+    <!-- Include jQuery, mediaelement.js, your script if needed -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mediaelement/4.2.7/mediaelement-and-player.min.js"></script>
+    <script src="{% static 'script.js' %}"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+  const players = document.querySelectorAll("audio[id^='fc-media-']");
+
+  players.forEach((audio, index) => {
+    // Volume control setup
+    const volumeSlider = document.getElementById(`volume-slider-${index + 1}`);
+    if (volumeSlider) {
+      // Initialize slider to audio's current volume
+      volumeSlider.value = audio.volume;
+
+      // Update audio volume when slider changes
+      volumeSlider.addEventListener("input", () => {
+        audio.volume = volumeSlider.value;
+      });
+    }
+  });
+
+  players.forEach((audio, index) => {
+    const lyricsContainer = document.getElementById(`lyrics-${index + 1}`);
+    const lyricsScript = document.getElementById(`lyrics-${index + 1}-data`);
+
+    if (!lyricsContainer || !lyricsScript) return;
+
+    let currentLyricIndex = 0;
+    let lyricsData;
+
+    try {
+      lyricsData = JSON.parse(lyricsScript.textContent);
+    } catch {
+      lyricsContainer.innerText = "Lyrics data format error.";
+      return;
+    }
+
+    if (!lyricsData || lyricsData.length === 0) {
+      lyricsContainer.innerText = "No lyrics available.";
+      return;
+    }
+
+    lyricsContainer.innerText = lyricsData[0].lyrics;
+
+    audio.addEventListener("timeupdate", () => {
+      const currentTime = audio.currentTime;
+
+      while (
+        currentLyricIndex < lyricsData.length - 1 &&
+        currentTime >= timeToSeconds(lyricsData[currentLyricIndex + 1].time)
+      ) {
+        currentLyricIndex++;
+      }
+
+      lyricsContainer.innerText = lyricsData[currentLyricIndex].lyrics;
+    });
+  });
+
+  function timeToSeconds(time) {
+    const [minutes, seconds] = time.split(":").map(parseFloat);
+    return minutes * 60 + seconds;
+  }
+});
+
+    </script>
+</body>
+
+</html>
